@@ -2,6 +2,16 @@
     Router
 */
 (function()  {
+	if (!Array.indexOf) {
+	  Array.prototype.indexOf = function (obj, start) {
+	    for (var i = (start || 0); i < this.length; i++) {
+	      if (this[i] == obj) {
+	        return i;
+	      }
+	    }
+	    return -1;
+	  };
+	}
     var Router=function()   {
         this.routes=new Array();
     };
@@ -15,21 +25,35 @@
                 fn: fn,
                 scope: scope,
                 rules: rules
-            })  
+            });
         }, 
         addRoute: function(routeConfig) {
             return this.routes[this.routes.length]=new Route(routeConfig);              
         },
         applyRoute: function(route)   {
-            for(var i=0, j=this.routes.length;i<j; i++)  {
-                var sRoute=this.routes[i];                    
-                
-                if(sRoute.matches(route)) {
-                    sRoute.fn.apply(sRoute.scope, sRoute.getArgumentsValues(route));   
-                }    
-            }
-        }     
-    }
+			if(typeof route != 'undefined'){
+				for(var i=0, j=this.routes.length;i<j; i++)  {
+					var sRoute=this.routes[i];
+					
+					if(sRoute.matches(route)) {
+						sRoute.fn.apply(sRoute.scope, sRoute.getArgumentsValues(route));
+						return;
+					}
+				}
+			}
+			if(this.defaultRoute) {
+				this.defaultRoute.fn.apply(this.defaultRoute.scope);
+			}
+        },
+		registerDefaultRoute: function(fn, paramObject)  {
+            var scope=paramObject?paramObject.scope?paramObject.scope:{}:{};
+            this.defaultRoute = {
+				fn: fn,
+				scope: scope
+			};
+			
+        }
+    };
     
     var Route=function()    {
         this.route=arguments[0].route;
@@ -44,7 +68,7 @@
         
         this.routeParts=this.route.split("/");
         for(var i=0, j=this.routeParts.length; i<j; i++)   {
-            var rPart=this.routeParts[i]
+            var rPart=this.routeParts[i];
             if(rPart.substr(0,1)=="{" && rPart.substr(rPart.length-1, 1) == "}") {
                 var rKey=rPart.substr(1,rPart.length-2); 
                 this.routeArguments.push(rKey);
@@ -55,9 +79,7 @@
             }
             
         }
-       
-        
-    }
+    };
     
     Route.prototype.getArgumentsObject=function(route) {
         var rRouteParts=route.split("/");   
@@ -72,7 +94,7 @@
             }                   
         }
         return rObject;
-    }
+    };
     
     Route.prototype.getArgumentsValues=function(route) {
         var rRouteParts=route.split("/");   
@@ -86,7 +108,7 @@
             }                   
         }
         return rArray;
-    }
+    };
     
     Route.prototype.matches=function(route) {
         //We'd like to examen every individual part of the incoming route
@@ -96,7 +118,7 @@
         
         //if the route is shorter than the route we want to check it against we can immidiatly stop.
         if(incomingRouteParts.length < this.routeParts.length-this.optionalRouteArguments.length)  {
-            routeMatches false;   
+            routeMatches=false;   
         } 
         else    {
             for(var i=0, j=incomingRouteParts.length; i<j && routeMatches; i++)    {
@@ -147,7 +169,7 @@
                                            
         }
         return routeMatches;
-    }
+    };
     
  
     //Create a main instance to which we bind the window events
@@ -162,11 +184,11 @@
     
 
     //Create the event that will listen for location hash changes
+    
     if ("onhashchange" in window) { // event supported?
         window.onhashchange = function () {
             router.applyRoute(window.location.hash.split('#')[1]);
-        }
-
+        };
     }
     else { // event not supported: This would be needed for older IE's
         var storedHash = window.location.hash.split('#')[1];
@@ -177,5 +199,4 @@
             }
         }, 100);
     }
-   
 })();

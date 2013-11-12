@@ -185,7 +185,7 @@
 
     //Create the event that will listen for location hash changes
     
-    if ("onhashchange" in window) { // event supported?
+    if ("onhashchange" in window && window.documentMode !== 7) { // event supported?
         window.onhashchange = function () {
             router.applyRoute(window.location.hash.split('#')[1]);
         };
